@@ -64,9 +64,10 @@ protected:
         QPointF currPos = bezierPoint(p0, p1, p2, p3, t);
 
         // * создаем коэффициент для управления размером фигуры во время движения
-        double coef = 1.0 + 2.0 * std::sin(acos(-1) * t);
+        double coef = 1.0 + 2.0 * sin(acos(-1) * t);
 
         painter.setBrush(Qt::green);
+
         painter.drawRect(currPos.x() - 20 * coef, currPos.y() - 20 * coef, 40 * coef, 40 * coef);
 
         painter.setPen(Qt::black);
