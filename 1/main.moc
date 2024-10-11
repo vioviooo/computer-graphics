@@ -125,9 +125,9 @@ int BezierCurveWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 namespace {
 
 #ifdef QT_MOC_HAS_STRINGDATA
-struct qt_meta_stringdata_CLASSoutputWindowENDCLASS_t {};
-constexpr auto qt_meta_stringdata_CLASSoutputWindowENDCLASS = QtMocHelpers::stringData(
-    "outputWindow",
+struct qt_meta_stringdata_CLASSOutputWindowENDCLASS_t {};
+constexpr auto qt_meta_stringdata_CLASSOutputWindowENDCLASS = QtMocHelpers::stringData(
+    "OutputWindow",
     "updateSpeed",
     "",
     "value"
@@ -137,7 +137,7 @@ constexpr auto qt_meta_stringdata_CLASSoutputWindowENDCLASS = QtMocHelpers::stri
 #endif // !QT_MOC_HAS_STRINGDATA
 } // unnamed namespace
 
-Q_CONSTINIT static const uint qt_meta_data_CLASSoutputWindowENDCLASS[] = {
+Q_CONSTINIT static const uint qt_meta_data_CLASSOutputWindowENDCLASS[] = {
 
  // content:
       12,       // revision
@@ -159,15 +159,15 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSoutputWindowENDCLASS[] = {
        0        // eod
 };
 
-Q_CONSTINIT const QMetaObject outputWindow::staticMetaObject = { {
+Q_CONSTINIT const QMetaObject OutputWindow::staticMetaObject = { {
     QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_meta_stringdata_CLASSoutputWindowENDCLASS.offsetsAndSizes,
-    qt_meta_data_CLASSoutputWindowENDCLASS,
+    qt_meta_stringdata_CLASSOutputWindowENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSOutputWindowENDCLASS,
     qt_static_metacall,
     nullptr,
-    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSoutputWindowENDCLASS_t,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSOutputWindowENDCLASS_t,
         // Q_OBJECT / Q_GADGET
-        QtPrivate::TypeAndForceComplete<outputWindow, std::true_type>,
+        QtPrivate::TypeAndForceComplete<OutputWindow, std::true_type>,
         // method 'updateSpeed'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
         QtPrivate::TypeAndForceComplete<int, std::false_type>
@@ -175,10 +175,10 @@ Q_CONSTINIT const QMetaObject outputWindow::staticMetaObject = { {
     nullptr
 } };
 
-void outputWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+void OutputWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
-        auto *_t = static_cast<outputWindow *>(_o);
+        auto *_t = static_cast<OutputWindow *>(_o);
         (void)_t;
         switch (_id) {
         case 0: _t->updateSpeed((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
@@ -187,20 +187,20 @@ void outputWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id
     }
 }
 
-const QMetaObject *outputWindow::metaObject() const
+const QMetaObject *OutputWindow::metaObject() const
 {
     return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
 }
 
-void *outputWindow::qt_metacast(const char *_clname)
+void *OutputWindow::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_CLASSoutputWindowENDCLASS.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSOutputWindowENDCLASS.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
 
-int outputWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+int OutputWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
     _id = QWidget::qt_metacall(_c, _id, _a);
     if (_id < 0)

@@ -14,18 +14,23 @@ class BezierCurveWidget : public QWidget {
 public:
     BezierCurveWidget(QWidget* parent = nullptr) : QWidget(parent), t(0.0), speed(0.001) {
         timer = new QTimer(this);
-        connect(timer, &QTimer::timeout, this, &BezierCurveWidget::updatePosition);
+        // * коннектим сигнал таймера к слоту для обновления позиции
+        // connect(timer, &QTimer::timeout, this, &BezierCurveWidget::updatePosition); // * this works as well
+        connect(timer, SIGNAL(timeout()), this, SLOT(updatePosition()));
         timer->start(10); // * repaint interval in ms
     }
 
-    void setSpeed(double newSpeed) {
-        speed = newSpeed;
+    void setSpeed(double _speed) {
+        speed = _speed; 
     }
 
 protected:
     void paintEvent(QPaintEvent* event) override {
-        (void)event;
+        (void)event; // * since this is not used
+        
         QPainter painter(this);
+
+        // * smooth out the edges
         painter.setRenderHint(QPainter::Antialiasing);
 
         // * bezier curve points
@@ -51,7 +56,8 @@ protected:
         // * draw the curve
         QPainterPath path(p0);
         path.cubicTo(p1, p2, p3);
-        painter.setPen(QPen(Qt::green, 2));
+
+        painter.setPen(QPen(Qt::green, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         painter.drawPath(path);
 
         // * curr pos of the moving obj
@@ -104,14 +110,14 @@ private:
     }
 };
 
-class outputWindow : public QWidget {
+class OutputWindow : public QWidget {
     Q_OBJECT
 
 private:
     BezierCurveWidget* bezierWidget;
 
 public:
-    outputWindow(QWidget* parent = nullptr) : QWidget(parent) {
+    OutputWindow(QWidget* parent = nullptr) : QWidget(parent) {
         QVBoxLayout* layout = new QVBoxLayout(this);
 
         bezierWidget = new BezierCurveWidget(this);
@@ -121,7 +127,8 @@ public:
         speedSlider->setValue(50);
 
         // * connect the slider to the widget
-        connect(speedSlider, &QSlider::valueChanged, this, &outputWindow::updateSpeed);
+        connect(speedSlider, &QSlider::valueChanged, this, &OutputWindow::updateSpeed);
+        // connect(speedSlider, SIGNAL(valueChanged()), this, SLOT(updateSpeed())); //* doesn;t work because SIGNAL() SLOT() do not support pointer to member syntax
 
         layout->addWidget(bezierWidget);
         layout->addWidget(speedSlider);
@@ -136,14 +143,15 @@ private slots:
     }
 };
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
+
     QApplication app(argc, argv);
 
-    outputWindow window;
+    OutputWindow window;
     window.resize(500, 650);
     window.show();
 
-    return app.exec();
+    return app.exec(); // * запуск обработки событий (event loop)
 }
 
 #include "main.moc"
