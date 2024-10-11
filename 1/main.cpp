@@ -8,14 +8,14 @@
 #include <cmath>
 #include <QPainterPath>
 
-class BezierWidget : public QWidget {
+class BezierCurveWidget : public QWidget {
     Q_OBJECT
 
 public:
-    BezierWidget(QWidget* parent = nullptr) : QWidget(parent), t(0.0), speed(0.001) {
+    BezierCurveWidget(QWidget* parent = nullptr) : QWidget(parent), t(0.0), speed(0.001) {
         timer = new QTimer(this);
-        connect(timer, &QTimer::timeout, this, &BezierWidget::updatePosition);
-        timer->start(16); // * ~60 FPS
+        connect(timer, &QTimer::timeout, this, &BezierCurveWidget::updatePosition);
+        timer->start(10); // * repaint interval in ms
     }
 
     void setSpeed(double newSpeed) {
@@ -55,25 +55,25 @@ protected:
         painter.drawPath(path);
 
         // * curr pos of the moving obj
-        QPointF currentPos = bezierPoint(p0, p1, p2, p3, t);
+        QPointF currPos = bezierPoint(p0, p1, p2, p3, t);
 
-        // * создаем переменную для управления размером фигуры во время движения
-        double scale = 1.0 + 2.0 * std::sin(acos(-1) * t);
+        // * создаем коэффициент для управления размером фигуры во время движения
+        double coef = 1.0 + 2.0 * std::sin(acos(-1) * t);
 
         painter.setBrush(Qt::green);
-        painter.drawRect(currentPos.x() - 20 * scale, currentPos.y() - 20 * scale, 40 * scale, 40 * scale);
+        painter.drawRect(currPos.x() - 20 * coef, currPos.y() - 20 * coef, 40 * coef, 40 * coef);
 
         painter.setPen(Qt::black);
 
         QFont font;
-        font.setPointSize(20 * scale);
+        font.setPointSize(20 * coef);
         painter.setFont(font);
 
         QFontMetrics metrics(font);
         QRect boundingRect = metrics.boundingRect("brat");
 
-        int x = currentPos.x() - boundingRect.width() / 2 - 2;
-        int y = currentPos.y() + boundingRect.height() / 2;
+        int x = currPos.x() - boundingRect.width() / 2 - 2;
+        int y = currPos.y() + boundingRect.height() / 2;
 
         painter.drawText(x, y, "brat");
     }
@@ -82,8 +82,11 @@ protected:
 private slots:
     void updatePosition() {
         t += speed;
-        if (t > 1.0)
+        if (t > 1.0) {
             t = 0.0;
+        } else if (t < 0.0) {
+            t = 1.0;
+        }
         update();  // * start paint event
     }
 
@@ -94,16 +97,9 @@ private:
 
     // * calculate bezier func
     QPointF bezierPoint(QPointF p0, QPointF p1, QPointF p2, QPointF p3, double t) {
-        double u = 1 - t;
-        double tt = t * t;
-        double uu = u * u;
-        double uuu = uu * u;
-        double ttt = tt * t;
-
-        QPointF point = uuu * p0;
-        point += 3 * uu * t * p1;
-        point += 3 * u * tt * p2;
-        point += ttt * p3;
+        double b = 1 - t;
+        QPointF point = b * b * b * p0 + 3 * b * b * t * p1 + 3 * b * t * t * p2 + t * t * t * p3;
+        // * P(t) = (1-t)^3 * P0 + 3 * (1-t)^2 * t * P1 + 3 * (1-t) * t^2 * P2 + t^3 * P3 ~ Bezier formula
         return point;
     }
 };
@@ -111,11 +107,14 @@ private:
 class outputWindow : public QWidget {
     Q_OBJECT
 
+private:
+    BezierCurveWidget* bezierWidget;
+
 public:
     outputWindow(QWidget* parent = nullptr) : QWidget(parent) {
         QVBoxLayout* layout = new QVBoxLayout(this);
 
-        bezierWidget = new BezierWidget(this);
+        bezierWidget = new BezierCurveWidget(this);
 
         QSlider* speedSlider = new QSlider(Qt::Horizontal, this);
         speedSlider->setRange(1, 100);
@@ -135,9 +134,6 @@ private slots:
         double speed = value / 5000.0;
         bezierWidget->setSpeed(speed);
     }
-
-private:
-    BezierWidget* bezierWidget;
 };
 
 int main(int argc, char* argv[]) {

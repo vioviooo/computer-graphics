@@ -32,9 +32,9 @@ QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
 
 #ifdef QT_MOC_HAS_STRINGDATA
-struct qt_meta_stringdata_CLASSBezierWidgetENDCLASS_t {};
-constexpr auto qt_meta_stringdata_CLASSBezierWidgetENDCLASS = QtMocHelpers::stringData(
-    "BezierWidget",
+struct qt_meta_stringdata_CLASSBezierCurveWidgetENDCLASS_t {};
+constexpr auto qt_meta_stringdata_CLASSBezierCurveWidgetENDCLASS = QtMocHelpers::stringData(
+    "BezierCurveWidget",
     "updatePosition",
     ""
 );
@@ -43,7 +43,7 @@ constexpr auto qt_meta_stringdata_CLASSBezierWidgetENDCLASS = QtMocHelpers::stri
 #endif // !QT_MOC_HAS_STRINGDATA
 } // unnamed namespace
 
-Q_CONSTINIT static const uint qt_meta_data_CLASSBezierWidgetENDCLASS[] = {
+Q_CONSTINIT static const uint qt_meta_data_CLASSBezierCurveWidgetENDCLASS[] = {
 
  // content:
       12,       // revision
@@ -65,25 +65,25 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSBezierWidgetENDCLASS[] = {
        0        // eod
 };
 
-Q_CONSTINIT const QMetaObject BezierWidget::staticMetaObject = { {
+Q_CONSTINIT const QMetaObject BezierCurveWidget::staticMetaObject = { {
     QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_meta_stringdata_CLASSBezierWidgetENDCLASS.offsetsAndSizes,
-    qt_meta_data_CLASSBezierWidgetENDCLASS,
+    qt_meta_stringdata_CLASSBezierCurveWidgetENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSBezierCurveWidgetENDCLASS,
     qt_static_metacall,
     nullptr,
-    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSBezierWidgetENDCLASS_t,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSBezierCurveWidgetENDCLASS_t,
         // Q_OBJECT / Q_GADGET
-        QtPrivate::TypeAndForceComplete<BezierWidget, std::true_type>,
+        QtPrivate::TypeAndForceComplete<BezierCurveWidget, std::true_type>,
         // method 'updatePosition'
         QtPrivate::TypeAndForceComplete<void, std::false_type>
     >,
     nullptr
 } };
 
-void BezierWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+void BezierCurveWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
-        auto *_t = static_cast<BezierWidget *>(_o);
+        auto *_t = static_cast<BezierCurveWidget *>(_o);
         (void)_t;
         switch (_id) {
         case 0: _t->updatePosition(); break;
@@ -93,20 +93,20 @@ void BezierWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id
     (void)_a;
 }
 
-const QMetaObject *BezierWidget::metaObject() const
+const QMetaObject *BezierCurveWidget::metaObject() const
 {
     return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
 }
 
-void *BezierWidget::qt_metacast(const char *_clname)
+void *BezierCurveWidget::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_CLASSBezierWidgetENDCLASS.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSBezierCurveWidgetENDCLASS.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
 
-int BezierWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+int BezierCurveWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
     _id = QWidget::qt_metacall(_c, _id, _a);
     if (_id < 0)
