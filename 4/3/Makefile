@@ -1201,6 +1201,8 @@ main.moc: main.cpp \
 		/opt/homebrew/lib/QtGui.framework/Headers/qmatrix4x4.h \
 		/opt/homebrew/lib/QtGui.framework/Headers/QVector3D \
 		/opt/homebrew/lib/QtGui.framework/Headers/qvectornd.h \
+		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLFunctions_3_0 \
+		/opt/homebrew/lib/QtOpenGL.framework/Headers/qopenglfunctions_3_0.h \
 		/opt/homebrew/lib/QtGui.framework/Headers/QKeyEvent \
 		/opt/homebrew/lib/QtGui.framework/Headers/qevent.h \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLShaderProgram \
@@ -1237,6 +1239,8 @@ main.o: main.cpp /opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
 		/opt/homebrew/lib/QtGui.framework/Headers/qmatrix4x4.h \
 		/opt/homebrew/lib/QtGui.framework/Headers/QVector3D \
 		/opt/homebrew/lib/QtGui.framework/Headers/qvectornd.h \
+		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLFunctions_3_0 \
+		/opt/homebrew/lib/QtOpenGL.framework/Headers/qopenglfunctions_3_0.h \
 		/opt/homebrew/lib/QtGui.framework/Headers/QKeyEvent \
 		/opt/homebrew/lib/QtGui.framework/Headers/qevent.h \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLShaderProgram \

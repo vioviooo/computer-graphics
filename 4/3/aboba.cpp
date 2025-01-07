@@ -1,16 +1,17 @@
 #include <QApplication>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
+#include <QOpenGLFunctions_3_0>
 #include <QTimer>
 #include <QMatrix4x4>
 #include <QVector3D>
-#include <QOpenGLFunctions_3_0>
 #include <QKeyEvent>
 #include <QOpenGLShaderProgram>
 #include <QtMath>
+
 #include <vector>
 
-class Scene : public QOpenGLWidget, protected QOpenGLFunctions {
+class Scene : public QOpenGLWidget, protected QOpenGLFunctions_3_0 {
     Q_OBJECT
 
 public:
@@ -25,14 +26,10 @@ protected:
     void initializeGL() override {
         initializeOpenGLFunctions();
         glEnable(GL_DEPTH_TEST);
-        initShaders();
+        // initShaders();
+        // setupSphere();
+        // setupCube();
         setupPyramid();
-        setupCube();
-        setupSphere();
-        qDebug() << "PyramidVAO: " << pyramidVAO;
-        qDebug() << "CubeVAO: " << cubeVAO;
-        qDebug() << "SphereVAO: " << sphereVAO;
-        qDebug() << "OpenGL Version:" << reinterpret_cast<const char*>(glGetString(GL_VERSION));
     }
 
     void resizeGL(int w, int h) override {
@@ -53,50 +50,43 @@ protected:
         shaderProgram.setUniformValue("dirLightDirection", dirLightDirection);
         shaderProgram.setUniformValue("dirLightColor", dirLightColor);
         shaderProgram.setUniformValue("cameraPos", cameraPosition);
-        shaderProgram.bind();
 
+        // Draw cube
+        // QMatrix4x4 cubeModel;
+        // cubeModel.translate(-2.0f, 0.0f, -3.0f);
+        // cubeModel.rotate(rotationAngle, 0.5f, 1.0f, 0.0f);
+        // QMatrix4x4 cubeMVP = projection * view * cubeModel;
+        // shaderProgram.setUniformValue("mvp", cubeMVP);
+        // shaderProgram.setUniformValue("model", cubeModel);
+        // drawCube();
 
-        // * Draw pyramid
-        QMatrix4x4 pyramidModel;
-        pyramidModel.translate(0.0f, -0.5f, -3.0f);
-        pyramidModel.rotate(30.0f, 1.0f, 0.0f, 0.0f);
-        pyramidModel.rotate(rotationAngle, 0.0f, 1.0f, 0.0f);
-        QMatrix4x4 pyramidMVP = projection * view * pyramidModel;
-        shaderProgram.setUniformValue("mvp", pyramidMVP);
-        shaderProgram.setUniformValue("model", pyramidModel);
-        drawPyramid();
+        // // Draw sphere
+        // QMatrix4x4 sphereModel;
+        // sphereModel.translate(2.5f, 0.0f, -3.0f);
+        // sphereModel.rotate(rotationAngle, 0.5f, 1.0f, 0.0f);
+        // QMatrix4x4 sphereMVP = projection * view * sphereModel;
+        // shaderProgram.setUniformValue("mvp", sphereMVP);
+        // shaderProgram.setUniformValue("model", sphereModel);
+        // drawSphere();
 
-        // * Draw cube
-        QMatrix4x4 cubeModel;
-        cubeModel.translate(-2.0f, 0.0f, -3.0f);
-        cubeModel.rotate(30.0f, 1.0f, 0.0f, 0.0f);
-        cubeModel.rotate(rotationAngle, 0.0f, 1.0f, 0.0f);
-        QMatrix4x4 cubeMVP = projection * view * cubeModel;
-        shaderProgram.setUniformValue("mvp", cubeMVP);
-        shaderProgram.setUniformValue("model", cubeModel);
-        drawCube();
+        // // Draw pyramid
+        // QMatrix4x4 pyramidModel;
+        // pyramidModel.translate(0.0f, -0.5f, -3.0f);
+        // pyramidModel.rotate(30.0f, 0.5f, 0.0f, 1.0f);
+        // pyramidModel.rotate(rotationAngle, 0.0f, 1.0f, 0.0f);
+        // QMatrix4x4 pyramidMVP = projection * view * pyramidModel;
+        // shaderProgram.setUniformValue("mvp", pyramidMVP);
+        // shaderProgram.setUniformValue("model", pyramidModel);
+        // drawPyramid();
 
-        // * Draw sphere
-        QMatrix4x4 sphereModel;
-        sphereModel.translate(2.5f, 0.0f, -3.0f);
-        sphereModel.rotate(rotationAngle, 0.5f, 1.0f, 0.0f);
-        float scaleFactor = 0.75f;
-        sphereModel.scale(scaleFactor);
-        QMatrix4x4 sphereMVP = projection * view * sphereModel;
-        shaderProgram.setUniformValue("mvp", sphereMVP);
-        shaderProgram.setUniformValue("model", sphereModel);
-        drawSphere();
+        // shaderProgram.bind();
 
-        GLint positionAttr = shaderProgram.attributeLocation("position");
-        GLint normalAttr = shaderProgram.attributeLocation("normal");
-        // qDebug() << "position attr:" << positionAttr << "normal attr:" << normalAttr;
+        // GLuint error = glGetError();
+        // if (error != GL_NO_ERROR) {
+        //     qDebug() << "OpenGL error:" << error;
+        // }
 
-        GLuint error = glGetError();
-        if (error != GL_NO_ERROR) {
-            qDebug() << "OpenGL error:" << error;
-        }
-
-        shaderProgram.release();
+        // shaderProgram.release();
     }
 
     void keyPressEvent(QKeyEvent *event) override {
@@ -128,22 +118,23 @@ private:
     QVector3D dirLightColor = QVector3D(1.0f, 0.2f, 0.2f);
     QVector3D cameraPosition = QVector3D(0.0f, 0.0f, 5.0f);
     GLuint cubeVAO, cubeVBO;
-    GLuint pyramidVAO, pyramidVBO;
     GLuint sphereVAO, sphereVBO;
+    GLuint pyramidVAO, pyramidVBO;
     size_t spherePrimitivesCount;
+
     float rotationAngle;
 
     void initShaders() {
         const char *vertexShaderSource = R"(
-            #version 330 core
-            layout (location = 0) in vec3 position;
-            layout (location = 1) in vec3 normal;
+            #version 120
+            attribute vec3 position;
+            attribute vec3 normal;
 
             uniform mat4 mvp;
             uniform mat4 model;
 
-            out vec3 fragPosition;
-            out vec3 fragNormal;
+            varying vec3 fragPosition;
+            varying vec3 fragNormal;
 
             void main() {
                 gl_Position = mvp * vec4(position, 1.0);
@@ -151,11 +142,12 @@ private:
                 fragNormal = normalize(mat3(model) * normal);
             }
         )";
-        const char *fragmentShaderSource = R"(
-            #version 330 core
 
-            in vec3 fragPosition;
-            in vec3 fragNormal;
+        const char *fragmentShaderSource = R"(
+            #version 120
+
+            varying vec3 fragPosition;
+            varying vec3 fragNormal;
 
             uniform vec3 pointLightPosition;
             uniform vec3 pointLightColor;
@@ -166,13 +158,11 @@ private:
             vec3 calcDirLight();
             vec3 calcPointLight();
 
-            out vec4 fragColor;
-
             void main() {
                 vec3 resultColor = vec3(0.0);
                 resultColor += calcPointLight();
                 resultColor += calcDirLight();
-                fragColor = vec4(resultColor, 1.0);  // Use the calculated resultColor
+                gl_FragColor = vec4(resultColor, 1.0);
             }
 
             vec3 calcDirLight() {
@@ -234,8 +224,8 @@ private:
     void setupSphere() {
         std::vector<GLfloat> vertices;
 
-        const int slices = 100;
-        const int stacks = 100;
+        const int slices = 40;
+        const int stacks = 40;
 
         for (int i = 0; i < stacks; ++i) {
             float theta1 = float(i) / stacks * M_PI;
@@ -283,79 +273,12 @@ private:
         glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
         glEnableVertexAttribArray(normalLocation);
 
-        glBindVertexArray(0); // * Unbind VAO
+        glBindVertexArray(0); // Unbind VAO
     }
 
     void drawSphere() {
         glBindVertexArray(sphereVAO);
         glDrawArrays(GL_TRIANGLES, 0, spherePrimitivesCount);
-        glBindVertexArray(0);
-    }
-
-    QVector3D calculateNormal(const QVector3D& v1, const QVector3D& v2, const QVector3D& v3) {
-        QVector3D edge1 = v2 - v1;
-        QVector3D edge2 = v3 - v1;
-        return QVector3D::crossProduct(edge1, edge2).normalized();
-    }
-
-    void setupPyramid() {
-
-        const float size = 1.0f;
-        const QVector3D apex(0.0f, size, 0.0f);
-
-        QVector3D v1(-size, 0.0f, -size);
-        QVector3D v2(size, 0.0f, -size);
-        QVector3D v3(size, 0.0f, size);
-        QVector3D v4(-size, 0.0f, size);
-
-
-        GLfloat vertices[] = {
-            -0.5f,  0.0f, -0.5f,  0.0f, -1.0f,  0.0f,
-             0.5f,  0.0f, -0.5f,  0.0f, -1.0f,  0.0f,
-            -0.5f,  0.0f,  0.5f,  0.0f, -1.0f,  0.0f,
-
-             0.5f,  0.0f, -0.5f,  0.0f, -1.0f,  0.0f,
-            -0.5f,  0.0f,  0.5f,  0.0f, -1.0f,  0.0f,
-             0.5f,  0.0f,  0.5f,  0.0f, -1.0f,  0.0f,
-
-            -0.5f,  0.0f, -0.5f,  0.0f,  0.5f, -1.0f,
-             0.5f,  0.0f, -0.5f,  0.0f,  0.5f, -1.0f,
-             0.0f,  1.0f,  0.0f,  0.0f,  0.5f, -1.0f,
-
-             0.5f,  0.0f, -0.5f,  1.0f,  0.5f,  0.0f,
-             0.5f,  0.0f,  0.5f,  1.0f,  0.5f,  0.0f,
-             0.0f,  1.0f,  0.0f,  1.0f,  0.5f,  0.0f,
-
-             0.5f,  0.0f,  0.5f,  0.0f,  0.5f,  1.0f,
-            -0.5f,  0.0f,  0.5f,  0.0f,  0.5f,  1.0f,
-             0.0f,  1.0f,  0.0f,  0.0f,  0.5f,  1.0f,
-
-            -0.5f,  0.0f,  0.5f, -1.0f,  0.5f,  0.0f,
-            -0.5f,  0.0f, -0.5f, -1.0f,  0.5f,  0.0f,
-             0.0f,  1.0f,  0.0f, -1.0f,  0.5f,  0.0f,
-        };
-
-        glGenVertexArrays(1, &pyramidVAO);
-        glGenBuffers(1, &pyramidVBO);
-
-        glBindVertexArray(pyramidVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, pyramidVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        GLuint positionLocation = shaderProgram.attributeLocation("position");
-        GLuint normalLocation = shaderProgram.attributeLocation("normal");
-
-        glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-        glEnableVertexAttribArray(positionLocation);
-        glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-        glEnableVertexAttribArray(normalLocation);
-
-        glBindVertexArray(0); // * Unbind VAO
-    }
-
-    void drawPyramid() {
-        glBindVertexArray(pyramidVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 18);
         glBindVertexArray(0);
     }
 
@@ -419,27 +342,93 @@ private:
         glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
         glEnableVertexAttribArray(normalLocation);
 
-        if (!QOpenGLContext::currentContext()) {
-            qDebug() << "No current OpenGL context!";
-        }
+        // GLuint EBO;
+        // glGenBuffers(1, &EBO);
+        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-        glBindVertexArray(0); // * Unbind VAO
+        glBindVertexArray(0); // Unbind VAO
     }
 
     void drawCube() {
         glBindVertexArray(cubeVAO);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+    }
+
+    QVector3D calculateNormal(const QVector3D& v1, const QVector3D& v2, const QVector3D& v3) {
+        QVector3D edge1 = v2 - v1;
+        QVector3D edge2 = v3 - v1;
+        return QVector3D::crossProduct(edge1, edge2).normalized();
+    }
+
+    void setupPyramid() {
+
+        const float size = 1.0f;
+        const QVector3D apex(0.0f, size, 0.0f);
+
+        QVector3D v1(-size, 0.0f, -size);
+        QVector3D v2(size, 0.0f, -size);
+        QVector3D v3(size, 0.0f, size);
+        QVector3D v4(-size, 0.0f, size);
+
+
+        GLfloat vertices[] = {
+            // base
+            -0.5f,  0.0f, -0.5f,  0.0f, -1.0f,  0.0f,
+             0.5f,  0.0f, -0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f,  0.0f,  0.5f,  0.0f, -1.0f,  0.0f,
+
+             0.5f,  0.0f, -0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f,  0.0f,  0.5f,  0.0f, -1.0f,  0.0f,
+             0.5f,  0.0f,  0.5f,  0.0f, -1.0f,  0.0f,
+
+            // lateral
+            -0.5f,  0.0f, -0.5f,  0.0f,  0.5f, -1.0f,
+             0.5f,  0.0f, -0.5f,  0.0f,  0.5f, -1.0f,
+             0.0f,  1.0f,  0.0f,  0.0f,  0.5f, -1.0f,
+
+             0.5f,  0.0f, -0.5f,  1.0f,  0.5f,  0.0f,
+             0.5f,  0.0f,  0.5f,  1.0f,  0.5f,  0.0f,
+             0.0f,  1.0f,  0.0f,  1.0f,  0.5f,  0.0f,
+
+             0.5f,  0.0f,  0.5f,  0.0f,  0.5f,  1.0f,
+            -0.5f,  0.0f,  0.5f,  0.0f,  0.5f,  1.0f,
+             0.0f,  1.0f,  0.0f,  0.0f,  0.5f,  1.0f,
+
+            -0.5f,  0.0f,  0.5f, -1.0f,  0.5f,  0.0f,
+            -0.5f,  0.0f, -0.5f, -1.0f,  0.5f,  0.0f,
+             0.0f,  1.0f,  0.0f, -1.0f,  0.5f,  0.0f,
+        };
+
+        glGenVertexArrays(1, &pyramidVAO);
+        glGenBuffers(1, &pyramidVBO);
+
+        glBindVertexArray(pyramidVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, pyramidVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        GLuint positionLocation = shaderProgram.attributeLocation("position");
+        GLuint normalLocation = shaderProgram.attributeLocation("normal");
+
+        glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(positionLocation);
+        glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+        glEnableVertexAttribArray(normalLocation);
+
+        glBindVertexArray(0); // Unbind VAO
+    }
+
+    void drawPyramid() {
+        glBindVertexArray(pyramidVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 18);
         glBindVertexArray(0);
     }
 };
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-
-    QSurfaceFormat format;
-    format.setVersion(3, 3);
-    format.setProfile(QSurfaceFormat::CoreProfile);
-    QSurfaceFormat::setDefaultFormat(format);
 
     Scene scene;
     scene.resize(800, 600);
