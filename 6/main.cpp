@@ -2,6 +2,9 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QTimer>
+#include <QElapsedTimer>  // Добавить нужный заголовок
+#include <QTime>
+#include <QPainter>
 #include <QMatrix4x4>
 #include <QVector3D>
 #include <QOpenGLFunctions_3_0>
@@ -10,7 +13,63 @@
 #include <QtMath>
 #include <vector>
 #include <fstream>
+#include <QOpenGLFramebufferObject>
+#include <QOpenGLFramebufferObjectFormat>
 #include <sstream>
+
+class HUDWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    HUDWidget(QWidget *parent = nullptr) : QWidget(parent) {
+        setAttribute(Qt::WA_TransparentForMouseEvents); // * надо чтобы виджет не блокировал события мыши
+        setGeometry(0, 0, 200, 100); // * размер и положение HUD
+        
+        fpsTimer = new QTimer(this);
+        connect(fpsTimer, &QTimer::timeout, this, &HUDWidget::updateFPS);
+        fpsTimer->start(1000);
+
+        fps = 0;
+        objectCount = 0;
+    }
+
+    void setObjectCount(int count) {
+        objectCount = count;
+    }
+
+    void setFPS(int fpsValue) {
+        fps = fpsValue;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override {
+        QPainter painter(this);
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 14));
+
+        painter.drawText(10, 20, QString("FPS: %1").arg(fps));
+        painter.drawText(10, 40, QString("Objects: %1").arg(objectCount));
+    }
+
+private slots:
+    void updateFPS() {
+        fps = fpsCounter;
+        fpsCounter = 0;
+        update();
+    }
+
+public:
+    void incrementFPSCounter() {
+        fpsCounter++;
+    }
+
+private:
+    int fps;
+    int objectCount;
+    int fpsCounter = 0;
+    QTimer *fpsTimer;
+};
 
 class Scene : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
@@ -22,6 +81,7 @@ public:
         connect(timer, &QTimer::timeout, this, &Scene::onTimeout);
         timer->start(16);
     }
+
 
 protected:
     struct RenderableObject {
@@ -44,7 +104,10 @@ protected:
 
         QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt";
         loadObjectsFromFile(configPath);
-        
+
+        hudWidget = new HUDWidget(this);
+        hudWidget->setParent(this);
+        hudWidget->show();
         // qDebug() << "PyramidVAO: " << pyramidVAO;
         // qDebug() << "CubeVAO: " << cubeVAO;
         // qDebug() << "SphereVAO: " << sphereVAO;
@@ -137,6 +200,11 @@ protected:
         }
 
         shaderProgram.release();
+
+        // * HUD widget
+
+        hudWidget->setObjectCount(objects.size());
+        hudWidget->incrementFPSCounter();  
     }
 
     void keyPressEvent(QKeyEvent *event) override {
@@ -230,6 +298,8 @@ private:
     float rotationY = 0.0f;
     bool isPerspective;
     std::vector<RenderableObject> objects;
+    QOpenGLFramebufferObject* fbo = nullptr; 
+    HUDWidget* hudWidget;
 
     void initShaders() {
         const char *vertexShaderSource = R"(
