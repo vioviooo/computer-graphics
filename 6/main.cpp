@@ -49,6 +49,17 @@ protected:
         }
     }
 
+    void updateProjection() {
+        projection.setToIdentity();
+
+        if (isPerspective) {
+            projection.perspective(45.0f, width() / height(), 0.1f, 100.0f);
+        } else {
+            float size = 2.0f; // * size of the orthographic view
+            projection.ortho(-size, size, -size, size, 0.1f, 100.0f);
+        }
+    }
+
    void paintGL() override {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -66,7 +77,7 @@ protected:
         shaderProgram.setUniformValue("dirLightColor", dirLightColor);
         shaderProgram.setUniformValue("cameraPos", cameraPosition);
 
-        // * Draw glassy floor (plane)
+        // * Draw floor (plane)
         QMatrix4x4 floorModel;
         floorModel.translate(0.0f, -0.5f, 0.0f);
         floorModel.scale(5.0f, 0.1f, 5.0f);
@@ -116,7 +127,6 @@ protected:
         shaderProgram.release();
     }
 
-
     void keyPressEvent(QKeyEvent *event) override {
         qDebug() << "Key Pressed:" << event->key();
         float moveSpeed = 2.0f;
@@ -141,6 +151,7 @@ protected:
             break;
         case Qt::Key_P:
             isPerspective = !isPerspective;
+            updateProjection();
             update();
             break;
         }
@@ -302,6 +313,7 @@ private:
             qDebug() << "Error binding shader program:" << shaderProgram.log();
         }
     }
+
     void drawFloor() {
         GLfloat vertices[] = {
             -5.0f, 0.0f, -5.0f,
