@@ -16,6 +16,7 @@
 #include <QOpenGLFramebufferObject>
 #include <QOpenGLFramebufferObjectFormat>
 #include <sstream>
+#include <QPushButton>
 
 class HUDWidget : public QWidget {
     Q_OBJECT
@@ -74,14 +75,38 @@ private:
 class Scene : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 
+private:
+    QPushButton *refreshButton;
+
+    void reloadConfig() {
+        QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt";
+        
+        objects.clear();
+
+        loadObjectsFromFile(configPath);
+
+        update();
+    }
+
 public:
     Scene(QWidget *parent = nullptr) : QOpenGLWidget(parent), rotationAngle(0.0f), isPerspective(true) {
         setFocusPolicy(Qt::StrongFocus);
+    
+        refreshButton = new QPushButton("Refresh", this);
+        refreshButton->setGeometry(689, 10, 100, 30);
+        connect(refreshButton, &QPushButton::clicked, this, &Scene::reloadConfig);
+        
         timer = new QTimer(this);
         connect(timer, &QTimer::timeout, this, &Scene::onTimeout);
         timer->start(16);
-    }
 
+        QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt";
+        loadObjectsFromFile(configPath);
+
+        hudWidget = new HUDWidget(this);
+        hudWidget->setParent(this);
+        hudWidget->show();
+    }
 
 protected:
     struct RenderableObject {
@@ -105,9 +130,6 @@ protected:
         QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt";
         loadObjectsFromFile(configPath);
 
-        hudWidget = new HUDWidget(this);
-        hudWidget->setParent(this);
-        hudWidget->show();
         // qDebug() << "PyramidVAO: " << pyramidVAO;
         // qDebug() << "CubeVAO: " << cubeVAO;
         // qDebug() << "SphereVAO: " << sphereVAO;
@@ -202,7 +224,6 @@ protected:
         shaderProgram.release();
 
         // * HUD widget
-
         hudWidget->setObjectCount(objects.size());
         hudWidget->incrementFPSCounter();  
     }

@@ -1218,6 +1218,8 @@ main.moc: main.cpp \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLFramebufferObject \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/qopenglframebufferobject.h \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLFramebufferObjectFormat \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QPushButton \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qpushbutton.h \
 		moc_predefs.h \
 		/opt/homebrew/share/qt/libexec/moc
 	/opt/homebrew/share/qt/libexec/moc $(DEFINES) --include /Users/vioviooo/Desktop/computer-graphics/6/moc_predefs.h -I/opt/homebrew/share/qt/mkspecs/macx-clang -I/Users/vioviooo/Desktop/computer-graphics/6 -I/Users/vioviooo/Desktop/computer-graphics/6 -I/opt/homebrew/lib/QtOpenGLWidgets.framework/Headers -I/opt/homebrew/lib/QtWidgets.framework/Headers -I/opt/homebrew/lib/QtOpenGL.framework/Headers -I/opt/homebrew/lib/QtGui.framework/Headers -I/opt/homebrew/lib/QtCore.framework/Headers -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1 -I/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Developer/CommandLineTools/usr/include -F/opt/homebrew/lib main.cpp -o main.moc
@@ -1265,6 +1267,8 @@ main.o: main.cpp /opt/homebrew/lib/QtWidgets.framework/Headers/QApplication \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLFramebufferObject \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/qopenglframebufferobject.h \
 		/opt/homebrew/lib/QtOpenGL.framework/Headers/QOpenGLFramebufferObjectFormat \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/QPushButton \
+		/opt/homebrew/lib/QtWidgets.framework/Headers/qpushbutton.h \
 		main.moc
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
