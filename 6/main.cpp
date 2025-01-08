@@ -9,7 +9,8 @@
 #include <QOpenGLShaderProgram>
 #include <QtMath>
 #include <vector>
-
+#include <fstream>
+#include <sstream>
 
 class Scene : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
@@ -24,11 +25,11 @@ public:
 
 protected:
     struct RenderableObject {
-        QString type;        // Object type: "Pyramid", "Cube", "Sphere"
-        QMatrix4x4 model;    // Transformation matrix
-        QVector3D position;  // Position in the scene
-        float scale;         // Scale factor
-        float rotation;      // Rotation angle
+        QString type;        // * object type: "Pyramid", "Cube", "Sphere"
+        QMatrix4x4 model;    // * transformation matrix
+        QVector3D position;  // * position in the scene
+        float scale;         // * scale factor
+        float rotation;      // * rotation angle (it won't rotate, it's for position rotation)
     };
 
     void initializeGL() override {
@@ -40,7 +41,10 @@ protected:
         setupPyramid();
         setupCube();
         setupSphere();
-        initializeObjects();
+
+        QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt"; // Change to the actual file path
+        loadObjectsFromFile(configPath);
+        
         // qDebug() << "PyramidVAO: " << pyramidVAO;
         // qDebug() << "CubeVAO: " << cubeVAO;
         // qDebug() << "SphereVAO: " << sphereVAO;
@@ -98,32 +102,6 @@ protected:
         drawFloor();
 
         shaderProgram.setUniformValue("isFloor", false);
-
-        // // * Draw pyramid
-        // QMatrix4x4 pyramidModel;
-        // pyramidModel.translate(0.0f, -0.5f, -3.0f);
-        // QMatrix4x4 pyramidMVP = projection * view * pyramidModel;
-        // shaderProgram.setUniformValue("mvp", pyramidMVP);
-        // shaderProgram.setUniformValue("model", pyramidModel);
-        // drawPyramid();
-
-        // // * Draw cube
-        // QMatrix4x4 cubeModel;
-        // cubeModel.translate(-2.0f, 0.0f, -3.0f);
-        // QMatrix4x4 cubeMVP = projection * view * cubeModel;
-        // shaderProgram.setUniformValue("mvp", cubeMVP);
-        // shaderProgram.setUniformValue("model", cubeModel);
-        // drawCube();
-
-        // // * Draw sphere
-        // QMatrix4x4 sphereModel;
-        // sphereModel.translate(2.5f, 0.24f, -3.0f);
-        // float scaleFactor = 0.75f;
-        // sphereModel.scale(scaleFactor);
-        // QMatrix4x4 sphereMVP = projection * view * sphereModel;
-        // shaderProgram.setUniformValue("mvp", sphereMVP);
-        // shaderProgram.setUniformValue("model", sphereModel);
-        // drawSphere();
 
         // * bleugh dynamic objects
         for (const auto &object : objects) {
@@ -433,11 +411,37 @@ private:
         glBindVertexArray(0); // * Unbind VAO
     }
 
-    void initializeObjects() {
-        objects.push_back({"Pyramid", QMatrix4x4(), QVector3D(0.0f, -0.5f, -3.0f), 1.0f, 0.0f});
-        objects.push_back({"Cube", QMatrix4x4(), QVector3D(-2.0f, 0.0f, -3.0f), 1.0f, 0.0f});
-        objects.push_back({"Sphere", QMatrix4x4(), QVector3D(2.5f, 0.24f, -3.0f), 0.75f, 0.0f});
-        objects.push_back({"Sphere", QMatrix4x4(), QVector3D(2.5f, 0.24f, -6.0f), 0.75f, 0.0f});
+    void loadObjectsFromFile(const QString &filePath) {
+        std::ifstream file(filePath.toStdString());
+        if (!file.is_open()) {
+            qDebug() << "YO Failed to open configuration file:" << filePath;
+            return;
+        }
+
+        objects.clear(); // * clear existing objects
+
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string type;
+            float x, y, z, scale, rotation;
+
+            if (!(iss >> type >> x >> y >> z >> scale >> rotation)) {
+                qDebug() << "Invalid line in config file:" << QString::fromStdString(line);
+                continue;
+            }
+
+            objects.push_back({
+                QString::fromStdString(type),
+                QMatrix4x4(),
+                QVector3D(x, y, z),
+                scale,
+                rotation
+            });
+        }
+
+        file.close();
+        qDebug() << "Loaded objects from file:" << filePath;
     }
 
     void drawSphere() {
