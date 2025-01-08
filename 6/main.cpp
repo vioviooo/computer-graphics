@@ -10,6 +10,7 @@
 #include <QtMath>
 #include <vector>
 
+
 class Scene : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 
@@ -22,6 +23,14 @@ public:
     }
 
 protected:
+    struct RenderableObject {
+        QString type;        // Object type: "Pyramid", "Cube", "Sphere"
+        QMatrix4x4 model;    // Transformation matrix
+        QVector3D position;  // Position in the scene
+        float scale;         // Scale factor
+        float rotation;      // Rotation angle
+    };
+
     void initializeGL() override {
         initializeOpenGLFunctions();
         glEnable(GL_BLEND);
@@ -31,10 +40,11 @@ protected:
         setupPyramid();
         setupCube();
         setupSphere();
-        qDebug() << "PyramidVAO: " << pyramidVAO;
-        qDebug() << "CubeVAO: " << cubeVAO;
-        qDebug() << "SphereVAO: " << sphereVAO;
-        qDebug() << "OpenGL Version:" << reinterpret_cast<const char*>(glGetString(GL_VERSION));
+        initializeObjects();
+        // qDebug() << "PyramidVAO: " << pyramidVAO;
+        // qDebug() << "CubeVAO: " << cubeVAO;
+        // qDebug() << "SphereVAO: " << sphereVAO;
+        // qDebug() << "OpenGL Version:" << reinterpret_cast<const char*>(glGetString(GL_VERSION));
     }
 
     void resizeGL(int w, int h) override {
@@ -60,7 +70,7 @@ protected:
         }
     }
 
-   void paintGL() override {
+    void paintGL() override {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         QMatrix4x4 view;
@@ -89,34 +99,54 @@ protected:
 
         shaderProgram.setUniformValue("isFloor", false);
 
-        // * Draw pyramid
-        QMatrix4x4 pyramidModel;
-        pyramidModel.translate(0.0f, -0.5f, -3.0f);
-        QMatrix4x4 pyramidMVP = projection * view * pyramidModel;
-        shaderProgram.setUniformValue("mvp", pyramidMVP);
-        shaderProgram.setUniformValue("model", pyramidModel);
-        drawPyramid();
+        // // * Draw pyramid
+        // QMatrix4x4 pyramidModel;
+        // pyramidModel.translate(0.0f, -0.5f, -3.0f);
+        // QMatrix4x4 pyramidMVP = projection * view * pyramidModel;
+        // shaderProgram.setUniformValue("mvp", pyramidMVP);
+        // shaderProgram.setUniformValue("model", pyramidModel);
+        // drawPyramid();
 
-        // * Draw cube
-        QMatrix4x4 cubeModel;
-        cubeModel.translate(-2.0f, 0.0f, -3.0f);
-        QMatrix4x4 cubeMVP = projection * view * cubeModel;
-        shaderProgram.setUniformValue("mvp", cubeMVP);
-        shaderProgram.setUniformValue("model", cubeModel);
-        drawCube();
+        // // * Draw cube
+        // QMatrix4x4 cubeModel;
+        // cubeModel.translate(-2.0f, 0.0f, -3.0f);
+        // QMatrix4x4 cubeMVP = projection * view * cubeModel;
+        // shaderProgram.setUniformValue("mvp", cubeMVP);
+        // shaderProgram.setUniformValue("model", cubeModel);
+        // drawCube();
 
-        // * Draw sphere
-        QMatrix4x4 sphereModel;
-        sphereModel.translate(2.5f, 0.24f, -3.0f);
-        float scaleFactor = 0.75f;
-        sphereModel.scale(scaleFactor);
-        QMatrix4x4 sphereMVP = projection * view * sphereModel;
-        shaderProgram.setUniformValue("mvp", sphereMVP);
-        shaderProgram.setUniformValue("model", sphereModel);
-        drawSphere();
+        // // * Draw sphere
+        // QMatrix4x4 sphereModel;
+        // sphereModel.translate(2.5f, 0.24f, -3.0f);
+        // float scaleFactor = 0.75f;
+        // sphereModel.scale(scaleFactor);
+        // QMatrix4x4 sphereMVP = projection * view * sphereModel;
+        // shaderProgram.setUniformValue("mvp", sphereMVP);
+        // shaderProgram.setUniformValue("model", sphereModel);
+        // drawSphere();
 
-        GLint positionAttr = shaderProgram.attributeLocation("position");
-        GLint normalAttr = shaderProgram.attributeLocation("normal");
+        // * bleugh dynamic objects
+        for (const auto &object : objects) {
+            QMatrix4x4 model = object.model;
+            model.scale(object.scale);
+            model.translate(object.position);
+            model.rotate(object.rotation, QVector3D(0.0f, 1.0f, 0.0f)); // Rotate around Y-axis
+
+            QMatrix4x4 mvp = projection * view * model;
+            shaderProgram.setUniformValue("mvp", mvp);
+            shaderProgram.setUniformValue("model", model);
+
+            if (object.type == "Pyramid") {
+                drawPyramid();
+            } else if (object.type == "Cube") {
+                drawCube();
+            } else if (object.type == "Sphere") {
+                drawSphere();
+            }
+        }
+
+        // GLint positionAttr = shaderProgram.attributeLocation("position");
+        // GLint normalAttr = shaderProgram.attributeLocation("normal");
         // qDebug() << "position attr:" << positionAttr << "normal attr:" << normalAttr;
 
         GLuint error = glGetError();
@@ -209,6 +239,7 @@ private:
     float rotationX = 0.0f;
     float rotationY = 0.0f;
     bool isPerspective;
+    std::vector<RenderableObject> objects;
 
     void initShaders() {
         const char *vertexShaderSource = R"(
@@ -400,6 +431,13 @@ private:
         glEnableVertexAttribArray(normalLocation);
 
         glBindVertexArray(0); // * Unbind VAO
+    }
+
+    void initializeObjects() {
+        objects.push_back({"Pyramid", QMatrix4x4(), QVector3D(0.0f, -0.5f, -3.0f), 1.0f, 0.0f});
+        objects.push_back({"Cube", QMatrix4x4(), QVector3D(-2.0f, 0.0f, -3.0f), 1.0f, 0.0f});
+        objects.push_back({"Sphere", QMatrix4x4(), QVector3D(2.5f, 0.24f, -3.0f), 0.75f, 0.0f});
+        objects.push_back({"Sphere", QMatrix4x4(), QVector3D(2.5f, 0.24f, -6.0f), 0.75f, 0.0f});
     }
 
     void drawSphere() {
