@@ -42,7 +42,7 @@ protected:
         setupCube();
         setupSphere();
 
-        QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt"; // Change to the actual file path
+        QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt";
         loadObjectsFromFile(configPath);
         
         // qDebug() << "PyramidVAO: " << pyramidVAO;
@@ -78,18 +78,22 @@ protected:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         QMatrix4x4 view;
-        QVector3D target = cameraPosition + QVector3D(0, 0, -1);
-        view.lookAt(cameraPosition, target, QVector3D(0, 1, 0));
+        QMatrix4x4 cameraModel;
 
-        view.rotate(rotationX, 1.0f, 0.0f, 0.0f);
-        view.rotate(rotationY, 0.0f, 1.0f, 0.0f);
+        cameraModel.rotate(rotationY, 0.0f, 1.0f, 0.0f);
+        cameraModel.rotate(rotationX, 1.0f, 0.0f, 0.0f);
+
+        QVector3D camera = cameraModel * cameraPosition;
+
+        QVector3D target = QVector3D(0, 0, 0);
+        view.lookAt(camera, target, QVector3D(0, 1, 0));
 
         shaderProgram.bind();
         shaderProgram.setUniformValue("pointLightPosition", pointLightPosition);
         shaderProgram.setUniformValue("pointLightColor", pointLightColor);
         shaderProgram.setUniformValue("dirLightDirection", dirLightDirection);
         shaderProgram.setUniformValue("dirLightColor", dirLightColor);
-        shaderProgram.setUniformValue("cameraPos", cameraPosition);
+        shaderProgram.setUniformValue("cameraPos", camera);
 
         // * Draw floor (plane)
         QMatrix4x4 floorModel;
@@ -106,9 +110,9 @@ protected:
         // * bleugh dynamic objects
         for (const auto &object : objects) {
             QMatrix4x4 model = object.model;
-            model.scale(object.scale);
             model.translate(object.position);
-            model.rotate(object.rotation, QVector3D(0.0f, 1.0f, 0.0f)); // Rotate around Y-axis
+            model.scale(object.scale);
+            model.rotate(object.rotation, QVector3D(0.0f, 1.0f, 0.0f));
 
             QMatrix4x4 mvp = projection * view * model;
             shaderProgram.setUniformValue("mvp", mvp);
@@ -123,8 +127,8 @@ protected:
             }
         }
 
-        // GLint positionAttr = shaderProgram.attributeLocation("position");
-        // GLint normalAttr = shaderProgram.attributeLocation("normal");
+        GLint positionAttr = shaderProgram.attributeLocation("position");
+        GLint normalAttr = shaderProgram.attributeLocation("normal");
         // qDebug() << "position attr:" << positionAttr << "normal attr:" << normalAttr;
 
         GLuint error = glGetError();
@@ -172,11 +176,19 @@ protected:
         }
     }
 
-    void mouseMoveEvent(QMouseEvent *event) override {
+        void mouseMoveEvent(QMouseEvent *event) override {
         if (event->buttons() & Qt::LeftButton) {
             QPoint delta = event->pos() - lastMousePosition;
             rotationX += delta.y() * 0.1f;
             rotationY += delta.x() * 0.1f;
+
+            if (rotationX > 88) {
+                rotationX = 88;
+            }
+            if (rotationX < -88) {
+                rotationX = -88;
+            }
+
             lastMousePosition = event->pos();
             update();
         }
