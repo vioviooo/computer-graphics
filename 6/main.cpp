@@ -78,11 +78,8 @@ class Scene : public QOpenGLWidget, protected QOpenGLFunctions {
 private:
     void reloadConfig() {
         QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt";
-        
         objects.clear();
-
         loadObjectsFromFile(configPath);
-
         update();
     }
 
@@ -177,11 +174,11 @@ protected:
 
         shaderProgram.bind();
         shaderProgram.setUniformValue("pointLightPosition", pointLightPosition);
-        shaderProgram.setUniformValue("pointLightColor", pointLightColor);
+        shaderProgram.setUniformValue("pointLightColor", pointLightOn ? pointLightColor : QVector3D(0, 0, 0));
         shaderProgram.setUniformValue("dirLightDirection", dirLightDirection);
-        shaderProgram.setUniformValue("dirLightColor", dirLightColor);
+        shaderProgram.setUniformValue("dirLightColor", dirLightOn ? dirLightColor : QVector3D(0, 0, 0));
         shaderProgram.setUniformValue("spotLightPosition", spotLightPosition);
-        shaderProgram.setUniformValue("spotLightDirection", spotLightDirection);
+        shaderProgram.setUniformValue("spotLightDirection", spotLightOn ? spotLightDirection : QVector3D(0, 0, 0));
         shaderProgram.setUniformValue("spotLightColor", spotLightColor);
         shaderProgram.setUniformValue("spotLightInnerCutOffCos", (float) cos(spotLightInnerCutOff / 180 * 3.141592));
         shaderProgram.setUniformValue("spotLightOuterCutOffCos", (float) cos(spotLightOuterCutOff / 180 * 3.141592));
@@ -221,16 +218,29 @@ protected:
             }
         }
 
-        GLint positionAttr = shaderProgram.attributeLocation("position");
-        GLint normalAttr = shaderProgram.attributeLocation("normal");
-        // qDebug() << "position attr:" << positionAttr << "normal attr:" << normalAttr;
-
         GLuint error = glGetError();
         if (error != GL_NO_ERROR) {
             qDebug() << "OpenGL error:" << error;
         }
 
         shaderProgram.release();
+
+        if (pointLightOn) {
+            pointLightShaderProgram.bind();
+
+            QMatrix4x4 model;
+            model.translate(pointLightPosition);
+            model.scale(0.1f);
+
+            QMatrix4x4 mvp = projection * view * model;
+            pointLightShaderProgram.setUniformValue("mvp", mvp);
+            pointLightShaderProgram.setUniformValue("model", model);
+            pointLightShaderProgram.setUniformValue("pointLightColor", pointLightColor);
+
+            drawSphere();
+
+            pointLightShaderProgram.release();
+        }
 
         // * HUD widget
         hudWidget->setObjectCount(objects.size());
@@ -239,10 +249,13 @@ protected:
 
     void keyPressEvent(QKeyEvent *event) override {
         qDebug() << "Key Pressed:" << event->key();
-        float moveSpeed = 2.0f;
+        float moveSpeed = 0.5f;
         switch (event->key()) {
         case Qt::Key_W:
             cameraPosition.setZ(cameraPosition.z() - moveSpeed);
+            if (cameraPosition.z() < 0.5) {
+                cameraPosition.setZ(0.5);
+            }
             break;
         case Qt::Key_S:
             cameraPosition.setZ(cameraPosition.z() + moveSpeed);
@@ -262,7 +275,15 @@ protected:
         case Qt::Key_P:
             isPerspective = !isPerspective;
             updateProjection();
-            update();
+            break;
+        case Qt::Key_1:
+            pointLightOn = !pointLightOn;
+            break;
+        case Qt::Key_2:
+            dirLightOn = !dirLightOn;
+            break;
+        case Qt::Key_3:
+            spotLightOn = !spotLightOn;
             break;
         }
         update();
@@ -324,15 +345,19 @@ private:
     QTimer *timer;
     QMatrix4x4 projection;
     QOpenGLShaderProgram shaderProgram;
+    QOpenGLShaderProgram pointLightShaderProgram;
     QVector3D pointLightPosition = QVector3D(2.0f, 2.0f, -2.5f);
     QVector3D pointLightColor = QVector3D(0.2f, 1.0f, 0.2f);
     QVector3D dirLightDirection = QVector3D(0.0f, -1.0f, 1.0f);
-    QVector3D dirLightColor = QVector3D(0.0f, 0.0f, 0.0f);
+    QVector3D dirLightColor = QVector3D(1.0f, 1.0f, 1.0f);
     QVector3D spotLightPosition = QVector3D(0.0f, 10.0f, 0.0f);
     QVector3D spotLightDirection = QVector3D(0.0f, -1.0f, 0.0f);
     QVector3D spotLightColor = QVector3D(1.0f, 1.0f, 1.0f);
     float spotLightInnerCutOff = 20.0f;
     float spotLightOuterCutOff = 30.0f;
+    bool dirLightOn = true;
+    bool pointLightOn = true;
+    bool spotLightOn = true;
     QVector3D cameraPosition = QVector3D(0.0f, 0.0f, 5.0f);
     GLuint cubeVAO, cubeVBO;
     GLuint pyramidVAO, pyramidVBO;
@@ -352,6 +377,10 @@ private:
     void initShaders() {
         const char *vertexShaderSource = R"(
             #version 330 core
+
+            #undef mediump
+            precision mediump float;
+
             layout (location = 0) in vec3 position;
             layout (location = 1) in vec3 normal;
 
@@ -472,6 +501,24 @@ private:
             }
         )";
 
+        const char *fragmentPointLightShaderSource = R"(
+            #version 330 core
+
+            #undef mediump
+            precision mediump float;
+
+            in vec3 fragPosition;
+            in vec3 fragNormal;
+
+            uniform vec3 pointLightColor;
+
+            out vec4 fragColor;
+
+            void main() {
+                fragColor = vec4(pointLightColor, 1.0);
+            }
+        )";
+
         if (!shaderProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource)) {
             qDebug() << "Error compiling vertex shader:" << shaderProgram.log();
             return;
@@ -489,7 +536,30 @@ private:
 
         if (!shaderProgram.bind()) {
             qDebug() << "Error binding shader program:" << shaderProgram.log();
+            return;
         }
+        shaderProgram.release();
+
+        if (!pointLightShaderProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource)) {
+            qDebug() << "Error compiling vertex shader:" << shaderProgram.log();
+            return;
+        }
+
+        if (!pointLightShaderProgram.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentPointLightShaderSource)) {
+            qDebug() << "Error compiling fragment shader:" << shaderProgram.log();
+            return;
+        }
+
+        if (!pointLightShaderProgram.link()) {
+            qDebug() << "Error linking shader program:" << shaderProgram.log();
+            return;
+        }
+
+        if (!pointLightShaderProgram.bind()) {
+            qDebug() << "Error binding shader program:" << shaderProgram.log();
+            return;
+        }
+        pointLightShaderProgram.release();
     }
     
     void drawFloor() {
