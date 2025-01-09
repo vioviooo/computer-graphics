@@ -2,12 +2,12 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QTimer>
-#include <QElapsedTimer>  // Добавить нужный заголовок
+#include <QElapsedTimer>
 #include <QTime>
 #include <QPainter>
 #include <QMatrix4x4>
+#include <QColorDialog>
 #include <QVector3D>
-#include <QOpenGLFunctions_3_0>
 #include <QKeyEvent>
 #include <QOpenGLShaderProgram>
 #include <QtMath>
@@ -76,8 +76,6 @@ class Scene : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 
 private:
-    QPushButton *refreshButton;
-
     void reloadConfig() {
         QString configPath = "/Users/vioviooo/Desktop/computer-graphics/6/config.txt";
         
@@ -95,7 +93,11 @@ public:
         refreshButton = new QPushButton("Refresh", this);
         refreshButton->setGeometry(689, 10, 100, 30);
         connect(refreshButton, &QPushButton::clicked, this, &Scene::reloadConfig);
-        
+
+        colorPickerButton = new QPushButton("Change Color", this);
+        colorPickerButton->setGeometry(689, 50, 100, 30);
+        connect(colorPickerButton, &QPushButton::clicked, this, &Scene::openColorPicker);
+
         timer = new QTimer(this);
         connect(timer, &QTimer::timeout, this, &Scene::onTimeout);
         timer->start(16);
@@ -178,6 +180,11 @@ protected:
         shaderProgram.setUniformValue("pointLightColor", pointLightColor);
         shaderProgram.setUniformValue("dirLightDirection", dirLightDirection);
         shaderProgram.setUniformValue("dirLightColor", dirLightColor);
+        shaderProgram.setUniformValue("spotLightPosition", spotLightPosition);
+        shaderProgram.setUniformValue("spotLightDirection", spotLightDirection);
+        shaderProgram.setUniformValue("spotLightColor", spotLightColor);
+        shaderProgram.setUniformValue("spotLightInnerCutOffCos", (float) cos(spotLightInnerCutOff / 180 * 3.141592));
+        shaderProgram.setUniformValue("spotLightOuterCutOffCos", (float) cos(spotLightOuterCutOff / 180 * 3.141592));
         shaderProgram.setUniformValue("cameraPos", camera);
 
         // * Draw floor (plane)
@@ -187,6 +194,7 @@ protected:
         QMatrix4x4 floorMVP = projection * view * floorModel;
         shaderProgram.setUniformValue("mvp", floorMVP);
         shaderProgram.setUniformValue("model", floorModel);
+        shaderProgram.setUniformValue("objectColor", QVector3D(0.3f, 0.2f, 0.2f));
         shaderProgram.setUniformValue("isFloor", true);
         drawFloor();
 
@@ -202,6 +210,7 @@ protected:
             QMatrix4x4 mvp = projection * view * model;
             shaderProgram.setUniformValue("mvp", mvp);
             shaderProgram.setUniformValue("model", model);
+            shaderProgram.setUniformValue("objectColor", QVector3D(1.0f, 1.0f, 1.0f));
 
             if (object.type == "Pyramid") {
                 drawPyramid();
@@ -265,7 +274,7 @@ protected:
         }
     }
 
-        void mouseMoveEvent(QMouseEvent *event) override {
+    void mouseMoveEvent(QMouseEvent *event) override {
         if (event->buttons() & Qt::LeftButton) {
             QPoint delta = event->pos() - lastMousePosition;
             rotationX += delta.y() * 0.1f;
@@ -299,14 +308,31 @@ private slots:
         update();
     }
 
+    void openColorPicker() {
+        QColor selectedColor = QColorDialog::getColor(Qt::white, this, "Select Light Color");
+        if (selectedColor.isValid()) {
+            pointLightColor = QVector3D(
+                selectedColor.redF(),
+                selectedColor.greenF(),
+                selectedColor.blueF()
+            );
+            update();
+        }
+    }
+
 private:
     QTimer *timer;
     QMatrix4x4 projection;
     QOpenGLShaderProgram shaderProgram;
     QVector3D pointLightPosition = QVector3D(2.0f, 2.0f, -2.5f);
     QVector3D pointLightColor = QVector3D(0.2f, 1.0f, 0.2f);
-    QVector3D dirLightDirection = QVector3D(0.0f, 0.0f, -1.0f);
-    QVector3D dirLightColor = QVector3D(1.0f, 0.6f, 0.8f);
+    QVector3D dirLightDirection = QVector3D(0.0f, -1.0f, 1.0f);
+    QVector3D dirLightColor = QVector3D(0.0f, 0.0f, 0.0f);
+    QVector3D spotLightPosition = QVector3D(0.0f, 10.0f, 0.0f);
+    QVector3D spotLightDirection = QVector3D(0.0f, -1.0f, 0.0f);
+    QVector3D spotLightColor = QVector3D(1.0f, 1.0f, 1.0f);
+    float spotLightInnerCutOff = 20.0f;
+    float spotLightOuterCutOff = 30.0f;
     QVector3D cameraPosition = QVector3D(0.0f, 0.0f, 5.0f);
     GLuint cubeVAO, cubeVBO;
     GLuint pyramidVAO, pyramidVBO;
@@ -319,8 +345,9 @@ private:
     float rotationY = 0.0f;
     bool isPerspective;
     std::vector<RenderableObject> objects;
-    QOpenGLFramebufferObject* fbo = nullptr; 
     HUDWidget* hudWidget;
+    QPushButton *refreshButton;
+    QPushButton *colorPickerButton;
 
     void initShaders() {
         const char *vertexShaderSource = R"(
@@ -340,69 +367,108 @@ private:
                 fragNormal = normalize(mat3(model) * normal);
             }
         )";
+
         
         const char *fragmentShaderSource = R"(
             #version 330 core
 
+            #undef mediump
+            precision mediump float;
+
             in vec3 fragPosition;
             in vec3 fragNormal;
 
+            uniform vec3 objectColor;
             uniform vec3 pointLightPosition;
             uniform vec3 pointLightColor;
             uniform vec3 dirLightDirection;
             uniform vec3 dirLightColor;
+            uniform vec3 spotLightPosition;
+            uniform vec3 spotLightColor;
+            uniform vec3 spotLightDirection;
+            uniform float spotLightInnerCutOffCos;
+            uniform float spotLightOuterCutOffCos;
             uniform vec3 cameraPos;
             uniform bool isFloor;
 
-            vec3 calcDirLight();
-            vec3 calcPointLight();
+            vec3 calcDirLight(float ambiCoef, float diffCoef, float specCoef);
+            vec3 calcPointLight(float ambiCoef, float diffCoef, float specCoef);
+            vec3 calcSpotLight(float ambiCoef, float diffCoef, float specCoef);
 
             out vec4 fragColor;
 
             void main() {
                 vec3 resultColor = vec3(0.0);
                 if (isFloor) {
-                    resultColor = vec3(0.5f, 0.5f, 0.5f);
+                    // resultColor = vec3(0.5f, 0.5f, 0.5f);
+                    resultColor += calcPointLight(0.15, 0.7, 0.3);
+                    resultColor += calcDirLight(0.15, 0.7, 0.3);
+                    resultColor += calcSpotLight(0.15, 0.7, 0.3);
                 } else {
-                    resultColor += calcPointLight();
-                    resultColor += calcDirLight();
+                    resultColor += calcPointLight(0.05, 0.5, 0.5);
+                    resultColor += calcDirLight(0.05, 0.5, 0.5);
+                    resultColor += calcSpotLight(0.05, 0.5, 0.5);
                 }
                 fragColor = vec4(resultColor, 1.0);
             }
 
-            vec3 calcDirLight() {
+            vec3 calcDirLight(float ambiCoef, float diffCoef, float specCoef) {
                 vec3 lightDir = normalize(-dirLightDirection);
                 float diff = max(dot(fragNormal, lightDir), 0.0);
 
                 vec3 viewDir = normalize(cameraPos - fragPosition);
                 vec3 reflectDir = reflect(-lightDir, fragNormal);
-                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0f);
 
-                vec3 ambient = 0.05 * dirLightColor;
-                vec3 diffuse = 0.5 * diff * dirLightColor;
-                vec3 specular = 0.5 * spec * dirLightColor;
+                vec3 ambient  = ambiCoef * dirLightColor;
+                vec3 diffuse  = diffCoef * diff * dirLightColor;
+                vec3 specular = specCoef * spec * dirLightColor;
 
-                return (ambient + diffuse + specular);
+                return (ambient + diffuse + specular) * objectColor;
             }
 
-            vec3 calcPointLight() {
+            vec3 calcPointLight(float ambiCoef, float diffCoef, float specCoef) {
                 vec3 lightDir = normalize(pointLightPosition - fragPosition);
                 float diff = max(dot(fragNormal, lightDir), 0.0);
 
                 vec3 viewDir = normalize(cameraPos - fragPosition);
                 vec3 reflectDir = reflect(-lightDir, fragNormal);
-                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0f);
 
                 float linearCoef = 0.15f;
                 float quadraticCoef = 0.05f;
                 float distance = length(pointLightPosition - fragPosition);
                 float attenuation = 1.0 / (1.0 + linearCoef * distance + quadraticCoef * (distance * distance));
 
-                vec3 ambient = attenuation * 0.05 * pointLightColor;
-                vec3 diffuse = attenuation * 0.5 * diff * pointLightColor;
-                vec3 specular = attenuation * 0.5 * spec * pointLightColor;
+                vec3 ambient  = attenuation * ambiCoef * pointLightColor;
+                vec3 diffuse  = attenuation * diffCoef * diff * pointLightColor;
+                vec3 specular = attenuation * specCoef * spec * pointLightColor;
 
-                return (ambient + diffuse + specular);
+                return (ambient + diffuse + specular) * objectColor;
+            }
+
+            vec3 calcSpotLight(float ambiCoef, float diffCoef, float specCoef) {
+                vec3 lightDir = normalize(spotLightPosition - fragPosition);
+                float diff = max(dot(fragNormal, lightDir), 0.0);
+
+                vec3 viewDir = normalize(cameraPos - fragPosition);
+                vec3 reflectDir = reflect(-lightDir, fragNormal);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0f);
+
+                float theta = dot(lightDir, normalize(-spotLightDirection));
+                float epsilon = (spotLightInnerCutOffCos - spotLightOuterCutOffCos);
+                float intensity = clamp((theta - spotLightOuterCutOffCos) / epsilon, 0.0, 1.0);
+
+                float linearCoef = 0.045f;
+                float quadraticCoef = 0.0075f;
+                float distance = length(spotLightPosition - fragPosition);
+                float attenuation = 1.0 / (1.0 + linearCoef * distance + quadraticCoef * (distance * distance));
+
+                vec3 ambient  = attenuation * ambiCoef * spotLightColor;
+                vec3 diffuse  = attenuation * diffCoef * diff * spotLightColor * intensity;
+                vec3 specular = attenuation * specCoef * spec * spotLightColor * intensity;
+
+                return (ambient + diffuse + specular) * objectColor;
             }
         )";
 
@@ -425,13 +491,13 @@ private:
             qDebug() << "Error binding shader program:" << shaderProgram.log();
         }
     }
-
+    
     void drawFloor() {
         GLfloat vertices[] = {
-            -5.0f, 0.0f, -5.0f,
-            5.0f, 0.0f, -5.0f,
-            5.0f, 0.0f,  5.0f,
-            -5.0f, 0.0f,  5.0f
+            -5.0f, 0.0f, -5.0f, 0.0f, 1.0f, 0.0f,
+             5.0f, 0.0f, -5.0f, 0.0f, 1.0f, 0.0f,
+             5.0f, 0.0f,  5.0f, 0.0f, 1.0f, 0.0f,
+            -5.0f, 0.0f,  5.0f, 0.0f, 1.0f, 0.0f,
         };
 
         GLuint indices[] = {0, 1, 2, 0, 2, 3};
@@ -448,8 +514,13 @@ private:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, floorEBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-        glEnableVertexAttribArray(0);
+        GLuint positionLocation = shaderProgram.attributeLocation("position");
+        GLuint normalLocation = shaderProgram.attributeLocation("normal");
+
+        glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(positionLocation);
+        glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+        glEnableVertexAttribArray(normalLocation);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0); // * Unbind VBO
         glBindVertexArray(0); // * Unbind VAO
