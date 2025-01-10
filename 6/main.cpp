@@ -371,8 +371,8 @@ private:
     bool isPerspective;
     std::vector<RenderableObject> objects;
     HUDWidget* hudWidget;
-    QPushButton *refreshButton;
-    QPushButton *colorPickerButton;
+    QPushButton* refreshButton;
+    QPushButton* colorPickerButton;
 
     void initShaders() {
         const char *vertexShaderSource = R"(
